@@ -74,7 +74,9 @@ void generateDef(string inFile, string outFile)
     {
         // The MinGW-w64 .def.in files use 'F_X86_ANY(DATA)' to hide functions
         // overridden by the MinGW runtime, primarily math functions.
-        return line.replace(" F_X86_ANY(DATA)", "");
+        return line.replace(" F_X86_ANY(DATA)", "").
+                    replace("F_I386(_time32 == time)", "F_I386(time)"). // Need this w/o the alias
+                    replace("F_ARM_ANY(_time32)", "F_NON_I386(_time32)"); // Need this for x64 too
     });
 
     const includeDir = buildPath(inFile.dirName.dirName, "def-include");
@@ -228,7 +230,7 @@ void defs2implibs(string dir)
 
 void cl(string outObj, string args)
 {
-    runShell(`cl /c /Zl "/Fo` ~ outObj ~ `" ` ~ args);
+    runShell(`cl /c /W3 /WX /Zl "/Fo` ~ outObj ~ `" ` ~ args);
 }
 
 string quote(string arg)
@@ -387,6 +389,7 @@ void buildMsvcrt(string outDir)
             addObj(format!"msvcrt_stub_wide%d.obj"(i), format!"/D_APPTYPE=%d /D_UNICODE msvcrt_stub.c"(i));
         addObj("msvcrt_data.obj", "msvcrt_data.c");
         addObj("msvcrt_atexit.obj", "msvcrt_atexit.c");
+        addObj("msvcrt_stdio.obj", "msvcrt_stdio.c");
         if (!x64)
         {
             const obj = buildPath(outDir, "msvcrt_abs.obj");

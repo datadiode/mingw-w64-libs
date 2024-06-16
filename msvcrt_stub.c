@@ -1,4 +1,5 @@
-#include <windows.h>
+#include "common.h"
+#include <process.h>
 
 #define __UNKNOWN_APP    0 // abused for DLL
 #define __CONSOLE_APP    1
@@ -8,11 +9,9 @@
 #define _APPTYPE __CONSOLE_APP
 #endif
 
-typedef void(*_PVFV)();
-
 // C init
-extern _PVFV __xi_a[];
-extern _PVFV __xi_z[];
+extern _PIFV __xi_a[];
+extern _PIFV __xi_z[];
 // C++ init
 extern _PVFV __xc_a[];
 extern _PVFV __xc_z[];
@@ -23,7 +22,7 @@ extern _PVFV __xp_z[];
 extern _PVFV __xt_a[];
 extern _PVFV __xt_z[];
 
-extern void _setargv (void);
+extern void init_atexit();
 extern void term_atexit();
 
 extern IMAGE_DOS_HEADER __ImageBase; // linker generated
@@ -48,13 +47,14 @@ _DllMainCRTStartup (HINSTANCE hDll, DWORD dwReason, LPVOID lpReserved)
 
     if (dwReason == DLL_PROCESS_ATTACH)
     {
+        init_atexit();
         _initterm_e(__xi_a, __xi_z);
         _initterm(__xc_a, __xc_z);
     }
 
     bRet = DllMain (hDll, dwReason, lpReserved);
 
-    if (dwReason == DLL_PROCESS_DETACH || dwReason == DLL_PROCESS_ATTACH && !bRet)
+    if (dwReason == DLL_PROCESS_DETACH) // No action upon DLL_PROCESS_ATTACH
     {
         term_atexit();
         _initterm(__xp_a, __xp_z);
@@ -76,44 +76,34 @@ __pragma(comment(linker, "/alternatename:_DllMain@12=___DefaultDllMain@12"));
 
 #else // _APPTYPE != __UNKNOWN_APP
 
-extern int    __argc;
+#if MSVCRT_VERSION >= 140 // UCRT
+#define dllimport_argv
+#else // MSVCRT_VERSION < 140
+#undef __argc
+#undef __argv
+#undef __wargv
+#define dllimport_argv dllimport
+#endif // MSVCRT_VERSION < 140
+
+extern __declspec(dllimport_argv) int __argc;
 
 #ifndef _UNICODE
-extern char **__argv;
+extern __declspec(dllimport_argv) char **__argv;
 extern int main(int, char **, char **);
 #else
-extern wchar_t **__wargv;
+extern __declspec(dllimport_argv) wchar_t **__wargv;
 extern int wmain(int, wchar_t **, wchar_t **);
 #endif
 
-#if MSVCRT_VERSION >= 140 // UCRT
-
-#ifdef _M_X64
-__pragma(comment(linker, "/alternatename:__set_app_type=_set_app_type"));
+#if MSVCRT_VERSION == 70 && !defined(_M_X64)
+alternatename(_time32, time) // as in mingw-w64-crt/lib-common/msvcrt.def.in
 #else
-__pragma(comment(linker, "/alternatename:___set_app_type=__set_app_type"));
+alternatename(time, _time32) // as in mingw-w64-crt/lib32/msvcr*.def.in
 #endif
 
-enum _crt_argv_mode
-{
-    _crt_argv_no_arguments,
-    _crt_argv_unexpanded_arguments,
-    _crt_argv_expanded_arguments,
-};
+#if MSVCRT_VERSION < 140
 
-#ifndef _UNICODE
-extern int _initialize_narrow_environment();
-extern char **_get_initial_narrow_environment();
-extern int _configure_narrow_argv(int);
-extern char *_get_narrow_winmain_command_line();
-#else // _UNICODE
-extern int _initialize_wide_environment();
-extern wchar_t **_get_initial_wide_environment();
-extern int _configure_wide_argv(int);
-extern wchar_t *_get_wide_winmain_command_line();
-#endif
-
-#else // MSVCRT_VERSION < 140
+alternatename(_set_app_type, __set_app_type)
 
 /* In MSVCRT.DLL, Microsoft's initialization hook is called __getmainargs(),
  * and it expects a further structure argument, (which we don't use, but pass
@@ -146,7 +136,7 @@ void wWinMainCRTStartup(void)
 #endif
 {
     int nRet;
-    __set_app_type(_APPTYPE);
+    _set_app_type(_APPTYPE);
     __ref_oldnames = 0; // drag in alternate definitions
 
 #if MSVCRT_VERSION >= 140 // UCRT
@@ -173,6 +163,7 @@ void wWinMainCRTStartup(void)
   #endif
 #endif // MSVCRT_VERSION < 140
 
+    init_atexit();
     _initterm_e(__xi_a, __xi_z);
     _initterm(__xc_a, __xc_z);
 

@@ -4,6 +4,7 @@
 #error Requires Visual C++ 2015 or newer
 #endif
 
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 
 void __legacy_stdio_definitions()

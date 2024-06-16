@@ -1,0 +1,19 @@
+version: 1.0.{build}
+image: Visual Studio 2019
+
+environment:
+  tag: v8.0.2
+
+build_script:
+  - C:/msys64/usr/bin/wget.exe -nv "https://github.com/mirror/mingw-w64/archive/%tag%.zip"
+  - 7z x %tag%.zip
+  - C:/msys64/usr/bin/wget.exe -nv "https://downloads.dlang.org/releases/2.x/2.108.1/dmd-2.108.1.exe"
+  - start /wait dmd-2.108.1.exe /S
+  - C:/msys64/usr/bin/wget.exe -nv "https://github.com/datadiode/FreeExtractor/releases/download/v1.54/FESetup.exe"
+  - start /wait FESetup.exe /autoextract
+  - call "build_script.bat"
+  - 7z a %APPVEYOR_PROJECT_NAME%-%tag%.7z lib32 lib64
+
+artifacts:
+  - path: $(APPVEYOR_PROJECT_NAME)-$(tag).7z
+  - path: $(APPVEYOR_PROJECT_NAME)-$(tag).exe

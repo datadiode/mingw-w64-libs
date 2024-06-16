@@ -1,0 +1,202 @@
+<HTA:APPLICATION id='app'>
+<script>
+// This very first script element exists to catch otherwise uncaught script
+// errors. It also triggers on syntax errors in subsequent script elements.
+window.onerror = function(message, url, line)
+{
+	alert(url + "(" + line + "):\n" + message);
+}
+</script>
+<script>
+if (typeof dialogArguments === "undefined")
+{
+	moveTo(15000, 15000);
+	showModalDialog(location, app, location.search.substr(1));
+	close();
+}
+</script>
+<style>
+html
+{
+	font: 13px verdana;
+}
+table
+{
+	font: 13px verdana;
+	border: 1px solid black;
+	border-collapse: collapse;
+	margin: 8px;
+}
+td
+{
+	border: 1px solid black;
+	padding: 5px;
+	height: 30px;
+}
+body
+{
+	overflow: hidden;
+	height: 100%;
+}
+caption
+{
+	color: #0057B7;
+	padding-bottom: 8px;
+	text-align: left;
+	font-size: 18px;
+	font-weight: bold;
+}
+sup
+{
+	margin: 8px;
+}
+center
+{
+	text-align: right;
+	display: block;
+	left: 0px;
+	bottom: 0px;
+	border-top: 2 outset buttonface;
+	width: 100%;
+	white-space: nowrap;
+	position: absolute;
+	background-color: buttonface;
+}
+button
+{
+	font: 11px verdana;
+	margin: 13px 11px 11px 11px;
+	height: 23px;
+	width: 75px;
+}
+</style>
+<script>
+var fs = new ActiveXObject("Scripting.FileSystemObject");
+var wsh = new ActiveXObject("WScript.Shell");
+var marquee = "<marquee>&#x1F40C;&#x1F40C;&#x1F40C;&#x1F40C;&#x1F40C;</marquee>";
+
+function readfile(path)
+{
+	var content;
+	try
+	{
+		path = wsh.ExpandEnvironmentStrings(path);
+		content = fs.OpenTextFile(path).ReadAll();
+	}
+	catch (e)
+	{
+		content = e.message;
+	}
+	return "[" + fs.GetFileName(path) + "]\n" + content + "\n";
+}
+
+function popup()
+{
+	var pop = window.createPopup();
+	var popbody = pop.document.body;
+	popbody.style.color = "white";
+	popbody.style.backgroundColor = "blue";
+	popbody.innerHTML = "<pre style='word-wrap: break-word;'>" + event.srcElement.parentElement.lastChild.text + "</pre>";
+	popbody.onclick = function() { pop.hide(); };
+	pop.show(0, 0, screen.availWidth, screen.availHeight);
+}
+
+function explain(text)
+{
+	return "<a href='#' onclick='popup(this)'>" + text + "</a>";
+}
+
+function addendum(element)
+{
+	var text = element.lastChild.text;
+	return text ? text.replace(/[\r\n]/g, " ") : "";
+}
+
+function runcmd(row)
+{
+	row.lastChild.innerHTML = marquee;
+	var here = fs.GetParentFolderName(location.pathname);
+	var libs = addendum(row.cells[0]);
+	var dllname = /\w+\d+/.exec(row.firstChild.innerText)[0].replace("rt", "r").replace("05", "t") + ".dll";
+	var command = row.firstChild.innerText.
+		replace(/\w+/, "\"%comspec%\" /c \"dmd2\\windows\\bin\\dmd.exe\" -L=/LIBPATH:dmd2\\windows\\lib32mscoff\\mingw\"").
+		replace(/dmd2/g, "\"" + here + "\\dmd2") + "\"" + libs +
+		" -of=\"%temp%\\mingw-w64-libs-compile-test.exe\" 2> \"%temp%\\mingw-w64-libs-compile-test-32.txt\"\"";
+	var result32 = wsh.Run(command, 7, true);
+	if (result32 == 0 && fs.FileExists(wsh.ExpandEnvironmentStrings("%windir%\\system32\\" + dllname)))
+		wsh.Run("\"%comspec%\" /c \"\"%temp%\\mingw-w64-libs-compile-test.exe\" 1000 >> \"%temp%\\mingw-w64-libs-compile-test-32.txt\"\"", 7, true);
+	var detail32 = readfile("%temp%\\mingw-w64-libs-compile-test-32.txt");
+	var command = row.firstChild.innerText.
+		replace(/\w+/, "\"%comspec%\" /c \"dmd2\\windows\\bin64\\dmd.exe\" -L=/LIBPATH:dmd2\\windows\\lib64\\mingw\"").
+		replace(/dmd2/g, "\"" + here + "\\dmd2") + "\"" + libs +
+		" -of=\"%temp%\\mingw-w64-libs-compile-test.exe\" 2> \"%temp%\\mingw-w64-libs-compile-test-64.txt\"\"";
+	var result64 = wsh.Run(command, 7, true);
+	if (result64 == 0 && fs.FileExists(wsh.ExpandEnvironmentStrings("%windir%\\sysnative\\" + dllname)))
+		wsh.Run("\"%comspec%\" /c \"\"%temp%\\mingw-w64-libs-compile-test.exe\" 1000 >> \"%temp%\\mingw-w64-libs-compile-test-64.txt\"\"", 7, true);
+	var detail64 = readfile("%temp%\\mingw-w64-libs-compile-test-64.txt");
+	row.lastChild.innerHTML = explain(
+		result32 == 0 && result64 == 0 ? "SUCCEEDED" :
+		result32 == 0 ? "FAILED@64" :
+		result64 == 0 ? "FAILED@32" :
+		"FAILED") + "<comment>" + detail32 + detail64 + "</comment>";
+}
+
+function repaint()
+{
+	showModalDialog("javascript:close()", null, "dialogWidth: 0px; dialogHeight: 0px; unadorned: yes;");
+}
+
+window.onload = function()
+{
+	var autoextract = false;
+	var matches = dialogArguments.commandLine.match(/(?:"[^"]*"|\S+)/g);
+	for (var i = 0; i < matches.length; i++)
+	{
+		var arg = matches[i].replace(/"/g, "");
+		if (arg == "/autoextract") autoextract = true;
+	}
+
+	if (location.search) // Invoked from SFX?
+	{
+		// Silently disappear
+		fs.DeleteFile(location.pathname);
+		// Offer option -mscrtlib=msvcrt05 to avoid accidentally picking up an msvcrt.lib from Visual Studio 
+		var anchor = fs.GetParentFolderName(location.pathname) + "\\dmd2\\windows\\";
+		fs.CopyFile(anchor + "lib32mscoff\\mingw\\msvcrt.lib", anchor + "lib32mscoff\\mingw\\msvcrt05.lib");
+		fs.CopyFile(anchor + "lib64\\mingw\\msvcrt.lib", anchor + "lib64\\mingw\\msvcrt05.lib");
+	}
+
+	if (autoextract) window.close();
+
+	var rows = tests.rows;
+	for (var i = 0; i < rows.length; ++i)
+	{
+		runcmd(rows[i]);
+		repaint();
+	}
+	tests.firstChild.innerText = "Extraction and tests finished";
+}
+</script>
+<title>mingw-w64-libs</title>
+<body>
+<table id='tests' border='1'>
+<caption>Extraction finished - performing tests</caption>
+<col>
+<col width='100' align='center'>
+<tr><td>dmd -mscrtlib=vcruntime140 dmd2\samples\d\pi.d<comment>
+legacy_stdio_definitions.lib
+api-ms-win-crt-stdio-l1-1-0.lib
+api-ms-win-crt-time-l1-1-0.lib
+</comment><td>
+<tr><td>dmd -mscrtlib=msvcrt05 dmd2\samples\d\pi.d<td>
+<tr><td>dmd -mscrtlib=msvcrt80 dmd2\samples\d\pi.d<td>
+<tr><td>dmd -mscrtlib=msvcrt90 dmd2\samples\d\pi.d<td>
+<tr><td>dmd -mscrtlib=msvcrt100 dmd2\samples\d\pi.d<td>
+<tr><td>dmd -mscrtlib=msvcrt110 dmd2\samples\d\pi.d<td>
+<tr><td>dmd -mscrtlib=msvcrt120 dmd2\samples\d\pi.d<td>
+</table>
+<sup>Failure at -mscrtlib=msvcrt80 is a known issue.</sup>
+<center>
+<button tabindex='1' accesskey='c' onclick='window.close()'>Close</button>
+</center>
+</body>

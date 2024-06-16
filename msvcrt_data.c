@@ -79,6 +79,7 @@ _CRTALLOC(".CRT$XTZ") _PVFV __xt_z[] = { NULL };
 
 int _fltused = 0x9875;
 
+#ifdef WANT_IMAGE_LOAD_CONFIG_DIRECTORY
 #ifdef _M_IX86
 // magic linker symbols available if the binary has a safe exception table
 // (implicit if all object files are safe-EH compatible)
@@ -119,3 +120,4 @@ const DECLSPEC_SELECTANY IMAGE_LOAD_CONFIG_DIRECTORY _load_config_used =
   0,
   0,
 };
+#endif
