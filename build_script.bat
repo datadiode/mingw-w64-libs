@@ -52,12 +52,14 @@ FOR %%A in ("C:\msys64\mingw64\lib\libmsvcrt.a") DO (
 )
 endlocal
 
+del "%~dp0mingw-w64-libs-%tag%.7z"
+"%ProgramFiles%\7-Zip\7z.exe" a %~dp0mingw-w64-libs-%tag%.7z lib32 lib64
 del "%~dp0mingw-w64-libs-%tag%.zip"
-"C:\Program Files\7-Zip\7z.exe" a "%~dp0mingw-w64-libs-%tag%.zip" lib32\* lib64\* mingw-w64-libs-setup.hta
-"C:\Program Files\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib32 dmd2\windows\lib32mscoff\mingw
-"C:\Program Files\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib64 dmd2\windows\lib64\mingw
+"%ProgramFiles%\7-Zip\7z.exe" a "%~dp0mingw-w64-libs-%tag%.zip" lib32\* lib64\* mingw-w64-libs-setup.hta
+"%ProgramFiles%\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib32 dmd2\windows\lib32mscoff\mingw
+"%ProgramFiles%\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib64 dmd2\windows\lib64\mingw
 REM Create the SFX
-"C:\Program Files (x86)\FreeExtractor\MakeSFX.exe" ^
+"%ProgramFiles(x86)%\FreeExtractor\MakeSFX.exe" ^
 /zip="mingw-w64-libs-%tag%.zip" ^
 /sfx="mingw-w64-libs-%tag%.exe" ^
 /title="mingw-w64-libs" ^

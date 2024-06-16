@@ -14,7 +14,6 @@ build_script:
   - C:/msys64/usr/bin/wget.exe -nv "https://github.com/datadiode/FreeExtractor/releases/download/v1.54/FESetup.exe"
   - start /wait FESetup.exe /autoextract
   - call "build_script.bat"
-  - 7z a %APPVEYOR_PROJECT_NAME%-%tag%.7z lib32 lib64
 
 after_build:
   - bash.exe %APPVEYOR_BUILD_FOLDER%\virustotal_upload %APPVEYOR_BUILD_FOLDER%\%APPVEYOR_PROJECT_NAME%-%tag%.exe %APPVEYOR_BUILD_FOLDER%\virustotal_report.jsn
