@@ -58,9 +58,12 @@ del "%~dp0mingw-w64-libs-%tag%.zip"
 "%ProgramFiles%\7-Zip\7z.exe" a "%~dp0mingw-w64-libs-%tag%.zip" lib32\* lib64\* mingw-w64-libs-setup.hta
 "%ProgramFiles%\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib32 dmd2\windows\lib32mscoff\mingw
 "%ProgramFiles%\7-Zip\7z.exe" rn "%~dp0mingw-w64-libs-%tag%.zip" lib64 dmd2\windows\lib64\mingw
+"%ProgramFiles%\7-Zip\7z.exe" x -y "%~dp0mingw-w64-libs-%tag%.zip"
+del "%~dp0mingw-w64-libs-%tag%.zpaq"
+zpaq64 a "%~dp0mingw-w64-libs-%tag%.zpaq" dmd2\* mingw-w64-libs-setup.hta -m4
 REM Create the SFX
 "%ProgramFiles(x86)%\FreeExtractor\MakeSFX.exe" ^
-/zip="mingw-w64-libs-%tag%.zip" ^
+/zip="mingw-w64-libs-%tag%.zpaq" ^
 /sfx="mingw-w64-libs-%tag%.exe" ^
 /title="mingw-w64-libs" ^
 /website="https://github.com/datadiode/mingw-w64-libs" ^

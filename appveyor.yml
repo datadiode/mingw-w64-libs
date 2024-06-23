@@ -11,8 +11,10 @@ build_script:
   - 7z x %tag%.zip
   - C:/msys64/usr/bin/wget.exe -nv "https://downloads.dlang.org/releases/2.x/2.108.1/dmd-2.108.1.exe"
   - start /wait dmd-2.108.1.exe /S
-  - C:/msys64/usr/bin/wget.exe -nv "https://github.com/datadiode/FreeExtractor/releases/download/v1.54/FESetup.exe"
+  - C:/msys64/usr/bin/wget.exe -nv "https://ci.appveyor.com/api/buildjobs/cd556hxsoblswt5s/artifacts/output%2FFESetup.exe"
   - start /wait FESetup.exe /autoextract
+  - C:/msys64/usr/bin/wget.exe -nv "https://github.com/zpaq/zpaq/releases/download/7.15/zpaq715.zip"
+  - 7z x zpaq715.zip
   - call "build_script.bat"
 
 after_build:
