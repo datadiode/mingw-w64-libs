@@ -166,7 +166,7 @@ window.onload = function()
 		fs.CopyFile(anchor + "lib64\\mingw\\msvcrt.lib", anchor + "lib64\\mingw\\msvcrt05.lib");
 	}
 
-	if (autoextract) window.close();
+	if (autoextract) return window.close();
 
 	var rows = tests.rows;
 	for (var i = 0; i < rows.length; ++i)
